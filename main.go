@@ -49,7 +49,7 @@ func run() error {
 		if d.IsDir() {
 			return nil
 		}
-		files = append(files, p)
+		files = append(files, filepath.Join(src, p))
 		return nil
 	})
 	if err != nil {
