@@ -101,7 +101,7 @@ func run() error {
 			}
 			defer r.Close()
 
-			name := path.Join(dest.Path, filepath.ToSlash(f))
+			name := path.Join(dest.Path[1:], filepath.ToSlash(f))
 			o := bucket.Object(name).Retryer(storage.WithPolicy(storage.RetryAlways))
 			w := o.NewWriter(ctx)
 			defer w.Close()
