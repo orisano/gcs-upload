@@ -25,6 +25,8 @@ func run() error {
 	n := flag.Int("n", 24, "number of goroutines for uploading")
 	sequential := flag.Bool("s", false, "upload sequential upload")
 	verbose := flag.Bool("v", false, "show verbose")
+	bufMB := flag.Int("b", 0, "buffer size (mb)")
+
 	flag.Parse()
 	if flag.NArg() != 2 {
 		flag.Usage()
@@ -38,6 +40,11 @@ func run() error {
 
 	if dest.Scheme != "gs" {
 		return fmt.Errorf("dest must start with gs://: %s", dest.Scheme)
+	}
+
+	bufSize := int((24 * 16 / float64(*n)) * 1024 * 1024)
+	if *bufMB > 0 {
+		bufSize = *bufMB * 1024 * 1024
 	}
 
 	var files []string
@@ -76,7 +83,7 @@ func run() error {
 
 	uploadBufPool := sync.Pool{
 		New: func() any {
-			return make([]byte, 8*1024*1024)
+			return make([]byte, bufSize)
 		},
 	}
 
