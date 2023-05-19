@@ -76,7 +76,7 @@ func run() error {
 
 	uploadBufPool := sync.Pool{
 		New: func() any {
-			return make([]byte, 16*1024*1024)
+			return make([]byte, 8*1024*1024)
 		},
 	}
 
