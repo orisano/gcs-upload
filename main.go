@@ -49,7 +49,7 @@ func run() error {
 		if d.IsDir() {
 			return nil
 		}
-		files = append(files, filepath.Join(src, p))
+		files = append(files, p)
 		return nil
 	})
 	if err != nil {
@@ -95,7 +95,7 @@ func run() error {
 			default:
 			}
 
-			r, err := os.Open(f)
+			r, err := os.Open(filepath.Join(src, f))
 			if err != nil {
 				return fmt.Errorf("open upload file: %w", err)
 			}
