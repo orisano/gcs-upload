@@ -30,3 +30,7 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+dockers:
+  - image_templates:
+    - "ghcr.io/orisano/gcs-upload:latest"
+    - "ghcr.io/orisano/gcs-upload:{{ .Tag }}"
