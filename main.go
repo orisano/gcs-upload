@@ -26,7 +26,8 @@ func run() error {
 	n := flag.Int("n", 24, "number of goroutines for uploading")
 	sequential := flag.Bool("s", false, "upload sequential upload")
 	verbose := flag.Bool("v", false, "show verbose")
-	bufMB := flag.Int("b", 0, "buffer size (mb)")
+	bufMB := flag.Int("buf", 0, "buffer size (mb)")
+	chunkMB := flag.Int("chunk", 16, "chunk size (mb)")
 	gcInterval := flag.Int("gc", 0, "gc interval")
 
 	flag.Parse()
@@ -113,6 +114,7 @@ func run() error {
 			name := path.Join(dest.Path[1:], filepath.ToSlash(f))
 			o := bucket.Object(name).Retryer(storage.WithPolicy(storage.RetryAlways))
 			w := o.NewWriter(ctx)
+			w.ChunkSize = *chunkMB * 1024 * 1024
 			defer w.Close()
 
 			buf := uploadBufPool.Get().([]byte)
