@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -26,6 +27,7 @@ func run() error {
 	sequential := flag.Bool("s", false, "upload sequential upload")
 	verbose := flag.Bool("v", false, "show verbose")
 	bufMB := flag.Int("b", 0, "buffer size (mb)")
+	gcInterval := flag.Int("gc", 0, "gc interval")
 
 	flag.Parse()
 	if flag.NArg() != 2 {
@@ -126,8 +128,12 @@ func run() error {
 			if err := w.Close(); err != nil {
 				return fmt.Errorf("close writer: %w", err)
 			}
+			c := count.Add(1)
+			if *gcInterval > 0 && int(c)%*gcInterval == 0 {
+				runtime.GC()
+			}
 			if *verbose {
-				log.Printf("%*d: -> %s: %s", countWidth, count.Add(1), "gs://"+path.Join(o.BucketName(), o.ObjectName()), time.Now().Sub(start))
+				log.Printf("%*d: -> %s: %s", countWidth, c, "gs://"+path.Join(o.BucketName(), o.ObjectName()), time.Now().Sub(start))
 			}
 			return nil
 		})
