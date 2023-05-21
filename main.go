@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -26,8 +27,8 @@ func run() error {
 	n := flag.Int("n", 24, "number of goroutines for uploading")
 	sequential := flag.Bool("s", false, "upload sequential upload")
 	verbose := flag.Bool("v", false, "show verbose")
-	bufMB := flag.Int("buf", 0, "buffer size (mb)")
-	chunkMB := flag.Int("chunk", 16, "chunk size (mb)")
+	bufSize := flagBytes("buf", 512*1024, "buffer size")
+	chunkSize := flagBytes("chunk", 16*1024*1024, "chunk size")
 	gcInterval := flag.Int("gc", 0, "gc interval")
 
 	flag.Parse()
@@ -43,11 +44,6 @@ func run() error {
 
 	if dest.Scheme != "gs" {
 		return fmt.Errorf("dest must start with gs://: %s", dest.Scheme)
-	}
-
-	bufSize := int((24 * 16 / float64(*n)) * 1024 * 1024)
-	if *bufMB > 0 {
-		bufSize = *bufMB * 1024 * 1024
 	}
 
 	var files []string
@@ -86,7 +82,7 @@ func run() error {
 
 	uploadBufPool := sync.Pool{
 		New: func() any {
-			return make([]byte, bufSize)
+			return make([]byte, *bufSize)
 		},
 	}
 
@@ -114,7 +110,7 @@ func run() error {
 			name := path.Join(dest.Path[1:], filepath.ToSlash(f))
 			o := bucket.Object(name).Retryer(storage.WithPolicy(storage.RetryAlways))
 			w := o.NewWriter(ctx)
-			w.ChunkSize = *chunkMB * 1024 * 1024
+			w.ChunkSize = int(*chunkSize)
 			defer w.Close()
 
 			buf := uploadBufPool.Get().([]byte)
@@ -152,4 +148,50 @@ func main() {
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func flagBytes(name string, value uint64, usage string) *uint64 {
+	p := new(uint64)
+	*p = value
+	flag.Var((*bytesValue)(p), name, usage)
+	return p
+}
+
+var bytesUnits = []struct {
+	suffix string
+	value  uint64
+}{
+	{"m", 1 * 1024 * 1024},
+	{"k", 1 * 1024},
+	{"mb", 1 * 1024 * 1024},
+	{"kb", 1 * 1024},
+	{"b", 1},
+	{"", 1},
+}
+
+type bytesValue uint64
+
+func (b *bytesValue) String() string {
+	for _, u := range bytesUnits {
+		if uint64(*b) >= u.value {
+			return strconv.FormatUint(uint64(*b)/u.value, 10) + u.suffix
+		}
+	}
+	return "0"
+}
+
+func (b *bytesValue) Set(s string) error {
+	x := strings.ToLower(s)
+	for _, u := range bytesUnits {
+		if !strings.HasSuffix(x, u.suffix) {
+			continue
+		}
+		v, err := strconv.ParseUint(strings.TrimSuffix(x, u.suffix), 10, 64)
+		if err != nil {
+			return fmt.Errorf("parse(%s): %w", s, err)
+		}
+		*b = bytesValue(v * u.value)
+		return nil
+	}
+	panic("unreachable")
 }
