@@ -41,7 +41,7 @@ Options
 - `-chunk value`: Set the upload chunk size (default: 16m).
 - `-d string`: Set the local directory containing the files to be uploaded.
 - `-gc int`: Set the garbage collection (GC) interval.
-- `-l string: Upload files specified in the target list-file.
+- `-l string`: Upload files specified in the target list-file.
 - `-n int`: Set the number of goroutines for uploading (default: 24).
 - `-shuffle`: Shuffle the upload order.
 - `-v`: Show verbose output.
