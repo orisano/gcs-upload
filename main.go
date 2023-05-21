@@ -25,14 +25,19 @@ import (
 )
 
 func run() error {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage of gcs-upload <dest>:\n")
+		flag.PrintDefaults()
+	}
+
 	n := flag.Int("n", 24, "number of goroutines for uploading")
-	verbose := flag.Bool("v", false, "show verbose")
+	verbose := flag.Bool("v", false, "show verbose output")
 	bufSize := flagBytes("buf", 512*1024, "copy buffer size")
 	chunkSize := flagBytes("chunk", 16*1024*1024, "upload chunk size")
 	gcInterval := flag.Int("gc", 0, "gc interval")
 	shuffle := flag.Bool("shuffle", false, "shuffle upload order")
 	listFilePath := flag.String("l", "", "target list-file")
-	dir := flag.String("d", "", "target directory")
+	dir := flag.String("d", "", "local directory containing the files to be uploaded")
 
 	flag.Parse()
 	if flag.NArg() != 1 {
@@ -80,7 +85,7 @@ func run() error {
 		*listFilePath = lf
 	}
 
-	listFile, err := os.Open(*listFilePath)
+	listFile, err := openFile(*listFilePath)
 	if err != nil {
 		return fmt.Errorf("open list file: %w", err)
 	}
@@ -214,6 +219,13 @@ func (b *bytesValue) Set(s string) error {
 	panic("unreachable")
 }
 
+func openFile(name string) (*os.File, error) {
+	if name == "-" {
+		return os.Stdin, nil
+	}
+	return os.Open(name)
+}
+
 func writeListFile(dir string) (string, error) {
 	f, err := os.CreateTemp("", "")
 	if err != nil {
@@ -242,7 +254,7 @@ func writeListFile(dir string) (string, error) {
 }
 
 func shuffleListFile(listFile string) (string, error) {
-	f, err := os.Open(listFile)
+	f, err := openFile(listFile)
 	if err != nil {
 		return "", fmt.Errorf("open list file: %w", err)
 	}
