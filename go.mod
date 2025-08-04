@@ -1,8 +1,6 @@
 module github.com/orisano/gcs-upload
 
-go 1.22.7
-
-toolchain go1.23.0
+go 1.24.5
 
 require (
 	cloud.google.com/go/storage v1.48.0
