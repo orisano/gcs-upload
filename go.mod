@@ -3,7 +3,7 @@ module github.com/orisano/gcs-upload
 go 1.26.2
 
 require (
-	cloud.google.com/go/storage v1.62.3
+	cloud.google.com/go/storage v1.63.0
 	golang.org/x/sync v0.21.0
 )
 
